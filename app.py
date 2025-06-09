@@ -15,7 +15,7 @@ def index():
         start_row = int(request.form.get('start_row', 7))
         if file and file.filename.endswith(('.xls', '.xlsx')):
             df = pd.read_excel(file, skiprows=start_row - 1)
-            df.columns = [col.upper() for col in df.columns]
+            df.columns = [str(col).upper() for col in df.columns]
 
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
