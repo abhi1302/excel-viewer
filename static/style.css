@@ -1,0 +1,22 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 30px;
+    background: #f8f9fa;
+}
+
+input[type="submit"] {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.error {
+    background-color: #f8d7da;
+    padding: 10px;
+    border-left: 4px solid red;
+    margin-top: 20px;
+}
+
+.table-container {
+    margin-top: 20px;
+    overflow-x: auto;
+}

@@ -175,3 +175,32 @@ MaxPrintPages = 4294967295
 GdiPlusToken = 336270750
 ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
 09-06-2025	12:01:41.241	 INFO	 63252	 64388	LateInitialization	"Intialization finished"
+09-06-2025	21:36:09.440	 INFO	 74164	 62488	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	21:36:09.454	 INFO	 74164	 62488	DllMain	"PROCESS ATTACHED"
+09-06-2025	21:36:09.460	 INFO	 74164	 70340	LateInitialization	"Intialization..."
+09-06-2025	21:36:09.466	 INFO	 74164	 70340	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	21:36:09.472	 INFO	 74164	 70340	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	21:36:09.477	 INFO	 74164	 70340	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	21:36:09.482	 INFO	 74164	 70340	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	21:36:21.784	 INFO	 39976	 67192	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	21:36:21.795	 INFO	 39976	 67192	DllMain	"PROCESS ATTACHED"
+09-06-2025	21:36:21.799	 INFO	 39976	 67784	LateInitialization	"Intialization..."
+09-06-2025	21:36:21.806	 INFO	 39976	 67784	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	21:36:21.810	 INFO	 39976	 67784	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	21:36:21.813	 INFO	 39976	 67784	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	21:36:21.817	 INFO	 39976	 67784	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	21:36:24.842	ERROR	 39976	 67784	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	21:36:24.846	 INFO	 39976	 67784	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\bash.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 370754218
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	21:36:24.852	 INFO	 39976	 67784	LateInitialization	"Intialization finished"
