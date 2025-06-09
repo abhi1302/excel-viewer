@@ -1,0 +1,155 @@
+﻿Date	Time	Severity	PID	TID	Function	Message
+09-06-2025	10:10:24.630	 INFO	 39616	 68376	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:10:24.634	 INFO	 39616	 68376	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:10:24.635	 INFO	 39616	 12828	LateInitialization	"Intialization..."
+09-06-2025	10:10:24.636	 INFO	 39616	 12828	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:10:24.637	 INFO	 39616	 12828	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:10:24.639	 INFO	 39616	 12828	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:10:24.640	 INFO	 39616	 12828	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:10:27.653	ERROR	 39616	 12828	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:10:27.654	 INFO	 39616	 12828	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\bash.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 329597203
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:10:27.655	 INFO	 39616	 12828	LateInitialization	"Intialization finished"
+09-06-2025	10:11:43.731	 INFO	 63464	 66804	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:11:43.738	 INFO	 63464	 66804	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:11:43.740	 INFO	 63464	 68216	LateInitialization	"Intialization..."
+09-06-2025	10:11:43.742	 INFO	 63464	 68216	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:11:43.746	 INFO	 63464	 68216	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:11:43.748	 INFO	 63464	 68216	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:11:43.750	 INFO	 63464	 68216	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:11:46.770	ERROR	 63464	 68216	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:11:46.771	 INFO	 63464	 68216	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\bash.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 329676328
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:11:46.772	 INFO	 63464	 68216	LateInitialization	"Intialization finished"
+09-06-2025	10:11:57.646	 INFO	 65172	 58244	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:11:57.651	 INFO	 65172	 58244	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:11:57.653	 INFO	 65172	 43464	LateInitialization	"Intialization..."
+09-06-2025	10:11:57.654	 INFO	 65172	 43464	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:11:57.656	 INFO	 65172	 43464	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:11:57.658	 INFO	 65172	 43464	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:11:57.659	 INFO	 65172	 43464	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:12:00.677	ERROR	 65172	 43464	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:12:00.680	 INFO	 65172	 43464	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\vim.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 329690234
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:12:00.682	 INFO	 65172	 43464	LateInitialization	"Intialization finished"
+09-06-2025	10:39:45.813	 INFO	 44096	 64472	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:39:45.818	 INFO	 44096	 64472	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:39:45.820	 INFO	 44096	 65564	LateInitialization	"Intialization..."
+09-06-2025	10:39:45.821	 INFO	 44096	 65564	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:39:45.823	 INFO	 44096	 65564	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:39:45.824	 INFO	 44096	 65564	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:39:45.825	 INFO	 44096	 65564	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:39:48.844	ERROR	 44096	 65564	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:39:48.846	 INFO	 44096	 65564	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\vim.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 331358390
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:39:48.848	 INFO	 44096	 65564	LateInitialization	"Intialization finished"
+09-06-2025	10:43:52.633	 INFO	 50432	 55548	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:43:52.638	 INFO	 50432	 55548	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:43:52.640	 INFO	 50432	 69132	LateInitialization	"Intialization..."
+09-06-2025	10:43:52.642	 INFO	 50432	 69132	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:43:52.644	 INFO	 50432	 69132	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:43:52.645	 INFO	 50432	 69132	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:43:52.646	 INFO	 50432	 69132	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:43:55.657	ERROR	 50432	 69132	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:43:55.660	 INFO	 50432	 69132	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\vim.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 331605187
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:43:55.662	 INFO	 50432	 69132	LateInitialization	"Intialization finished"
+09-06-2025	10:44:58.017	 INFO	 67280	 21020	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:44:58.024	 INFO	 67280	 21020	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:44:58.027	 INFO	 67280	 55660	LateInitialization	"Intialization..."
+09-06-2025	10:44:58.029	 INFO	 67280	 55660	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:44:58.032	 INFO	 67280	 55660	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:44:58.034	 INFO	 67280	 55660	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:44:58.036	 INFO	 67280	 55660	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:45:01.058	ERROR	 67280	 55660	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:45:01.062	 INFO	 67280	 55660	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\vim.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 331670593
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:45:01.065	 INFO	 67280	 55660	LateInitialization	"Intialization finished"
+09-06-2025	10:45:29.296	 INFO	 55052	 58000	DllMain	"DLL_PROCESS_ATTACH Sun Apr 27 14:47:17 2025 11.4.2500.28"
+09-06-2025	10:45:29.300	 INFO	 55052	 58000	DllMain	"PROCESS ATTACHED"
+09-06-2025	10:45:29.302	 INFO	 55052	 61556	LateInitialization	"Intialization..."
+09-06-2025	10:45:29.303	 INFO	 55052	 61556	LoadDisplayDevicesName	"DisplayDevices : "
+09-06-2025	10:45:29.305	 INFO	 55052	 61556	LoadDisplayDevicesName	"\\.\DISPLAY1"
+09-06-2025	10:45:29.306	 INFO	 55052	 61556	LoadDisplayDevicesName	"\\.\DISPLAY2"
+09-06-2025	10:45:29.307	 INFO	 55052	 61556	LoadDisplayDevicesName	"\\.\DISPLAY3"
+09-06-2025	10:45:32.332	ERROR	 55052	 61556	LateInitialization	"std::exception caught = GetFileVersionInfoSizeW failed with 1813
+"
+09-06-2025	10:45:32.335	 INFO	 55052	 61556	LateInitialization	"Exe = C:\Users\abhijeet.mandal\AppData\Local\Programs\Git\usr\bin\vim.exe
+ProductName = 
+FileDescription = 
+ShadowFolder = %LOCALAPPDATA%\EndpointDLP\print-shadow
+ParsingMode = Hybrid
+DeletePrinterShadowFiles = 1
+PrinterUseDisplayDevicesList = 0
+EnablePrinterEscapeProcessing = 1
+EnableWatermarkForAll = 0
+MaxPrintPages = 4294967295
+GdiPlusToken = 331701875
+ExcludedEscapes = 4117, 37, 4118, 4115, 4121, "
+09-06-2025	10:45:32.339	 INFO	 55052	 61556	LateInitialization	"Intialization finished"

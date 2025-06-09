@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, send_file
 import pandas as pd
 import io
+import os
 
 app = Flask(__name__)
 
@@ -11,19 +12,16 @@ def index():
 
     if request.method == 'POST':
         file = request.files['file']
+        start_row = int(request.form.get('start_row', 7))
         if file and file.filename.endswith(('.xls', '.xlsx')):
-            df = pd.read_excel(file)
-
-            # Example of formatting/mapping: uppercasing all column names
+            df = pd.read_excel(file, skiprows=start_row - 1)
             df.columns = [col.upper() for col in df.columns]
 
-            # Save processed Excel to memory
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='Processed')
             output.seek(0)
 
-            # Store output in a Flask global for downloading
             global processed_excel
             processed_excel = output
 
@@ -37,7 +35,5 @@ def download():
     return send_file(processed_excel, download_name="processed_ratecard.xlsx", as_attachment=True)
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-    
