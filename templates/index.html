@@ -1,36 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Excel File Upload & Validation</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <title>Excel Viewer with Validation</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    .error { color: red; margin-top: 10px; }
+    input[type="number"] { width: 60px; }
+  </style>
 </head>
 <body>
-    <h2>Excel File Upload and Header Validation</h2>
-    <form method="POST" enctype="multipart/form-data">
-        <label>Choose Excel File: <input type="file" name="file" required></label><br><br>
-        <label>Start Reading From Row: 
-            <input type="number" name="start_row" value="7" min="1">
-        </label><br><br>
-        <input type="submit" value="Upload & Validate">
-    </form>
+  <h2>Excel File Upload with Header Validation</h2>
+  <form method="post" enctype="multipart/form-data">
+    <label>Choose Excel file (.xlsx): </label>
+    <input type="file" name="file" required>
+    <br><br>
+    <label>Start reading from row (default = 7): </label>
+    <input type="number" name="start_row" value="{{ start_row }}" min="1">
+    <button type="submit">Upload</button>
+  </form>
 
-    {% if errors %}
+  {% if errors %}
     <div class="error">
-        <h3>Validation Errors:</h3>
-        <ul>
-            {% for err in errors %}
-            <li>{{ err }}</li>
-            {% endfor %}
-        </ul>
+      <h4>Validation Errors:</h4>
+      <ul>
+        {% for err in errors %}
+          <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
     </div>
-    {% endif %}
+  {% endif %}
 
-    {% if data %}
-    <div class="table-container">
-        <h3>Validated Data:</h3>
-        {{ data | safe }}
-    </div>
-    {% endif %}
+  {% if data %}
+    <h3>Excel Data</h3>
+    <table>
+      <thead>
+        <tr>
+          {% for col in headers %}
+            <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data %}
+          <tr>
+            {% for col in headers %}
+              <td>{{ row[col] }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
 </body>
 </html>
