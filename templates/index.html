@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Excel Viewer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+  <h2>Upload Excel File</h2>
+  <form method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xls,.xlsx" required>
+    <button type="submit" class="btn btn-primary">Upload</button>
+  </form>
+  <hr>
+  {% if table %}
+    <h4>Excel Contents:</h4>
+    <div>{{ table | safe }}</div>
+    {% if download %}
+      <a href="/download" class="btn btn-success mt-3">Download Processed Excel</a>
+    {% endif %}
+  {% endif %}
+</body>
+</html>
