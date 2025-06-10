@@ -63,7 +63,7 @@ input[type="submit"]:hover,
   background: #0056b3;
 }
 
-/* Download button specific styling */
+/* Download Button Specific Styling */
 .download-buttons {
   margin-bottom: 10px;
 }
@@ -116,10 +116,9 @@ table th,
 table td {
   padding: 12px 15px;
   border: 1px solid #dee2e6;
-  white-space: nowrap; /* Prevent cell text from wrapping */
+  white-space: nowrap;
 }
 
-/* Responsive Adjustments */
 @media (max-width: 768px) {
   table th, table td {
     padding: 8px 10px;

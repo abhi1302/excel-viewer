@@ -1,14 +1,24 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, Response, session
-import pandas as pd
 import os
 import io
 import json
 import base64
+import logging
+import pandas as pd
+from flask import Flask, render_template, request, flash, redirect, url_for, Response, session
 
+# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Set to DEBUG to capture all log messages
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# Expected headers definition
 EXPECTED_HEADERS = [
     "BU PLMN Code",
     "TADIG PLMN Code",
@@ -55,70 +65,88 @@ def validate_excel(df):
             actual = str(df.iloc[3, col_index]).strip()
             if actual != expected:
                 messages.append(f"Cell {chr(65+col_index)}4 = '{actual}' ≠ '{expected}'")
+                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'",
+                             chr(65+col_index), expected, actual)
     except Exception as e:
-        messages.append(f"Error during header validation: {e}")
+        error_msg = f"Error during header validation: {e}"
+        messages.append(error_msg)
+        logger.exception("Exception during Excel header validation")
     return messages
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    logger.debug("Loading index route")
     data = None
     headers = []
     errors = []
     row_start = int(request.form.get("start_row", 7))
+    logger.debug("Row start set to: %d", row_start)
 
     if request.method == "POST":
         file = request.files.get("file")
         if file and (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
+            logger.debug("Received file: %s", file.filename)
             try:
-                # Read file bytes for reuse.
                 file_bytes = file.read()
-                # Store original file (Base64 encoded) and filename in session for later download.
+                file_size = len(file_bytes)
+                logger.debug("File size: %d bytes", file_size)
+                # Store the original file in session (encoded in Base64) and filename
                 session['original_file'] = base64.b64encode(file_bytes).decode('utf-8')
                 session['original_filename'] = file.filename
 
                 # Validate headers using a BytesIO stream
                 stream_validation = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream_validation, header=None)
+                logger.debug("Excel file read for header validation successfully")
                 errors = validate_excel(df_raw)
 
                 if errors:
                     flash("Excel validation errors encountered.", "error")
+                    logger.debug("Excel validation errors: %s", errors)
                 else:
-                    # Process data starting at row_start
                     stream_data = io.BytesIO(file_bytes)
                     df_data = pd.read_excel(stream_data, header=None, skiprows=row_start - 1)
+                    logger.debug("Excel file read for data processing successfully")
                     df_data.columns = EXPECTED_HEADERS
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
-                    
-                    # Store processed data in session (JSON serialization with default=str for Timestamps)
+
+                    # Store processed data in session with default=str for non-serializable types
                     session['data'] = json.dumps(data, default=str)
                     session['headers'] = json.dumps(headers)
+                    logger.debug("Data and headers stored in session")
             except Exception as e:
-                errors.append(f"Failed to process excel file: {e}")
-                flash(f"Failed to process excel file: {e}", "error")
+                error_msg = f"Failed to process excel file: {e}"
+                errors.append(error_msg)
+                flash(error_msg, "error")
+                logger.exception("Exception during file processing")
         else:
-            errors.append("Please upload a valid Excel file (.xlsx or .xls)")
-            flash("Please upload a valid Excel file (.xlsx or .xls)", "error")
+            error_msg = "Please upload a valid Excel file (.xlsx or .xls)"
+            errors.append(error_msg)
+            flash(error_msg, "error")
+            logger.debug("Invalid file provided or file type unsupported")
+    else:
+        logger.debug("GET method for index route")
 
     return render_template("index.html", data=data, headers=headers, errors=errors, start_row=row_start)
 
 @app.route("/download_original")
 def download_original():
-    # Retrieve the original file data from the session.
+    logger.debug("Download original file requested")
     original_file_b64 = session.get('original_file')
     original_filename = session.get('original_filename', "original_file.xlsx")
     if not original_file_b64:
         flash("No original file available for download. Please upload an Excel file first.", "error")
+        logger.debug("No original file in session")
         return redirect(url_for("index"))
     
     file_bytes = base64.b64decode(original_file_b64)
-    # Determine MIME type based on file extension (simplistic check)
     if original_filename.endswith(".xls"):
         mimetype = "application/vnd.ms-excel"
     else:
         mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     
+    logger.debug("Returning original file: %s", original_filename)
     return Response(
         file_bytes,
         mimetype=mimetype,
@@ -127,18 +155,19 @@ def download_original():
 
 @app.route("/download_csv")
 def download_csv():
+    logger.debug("Download CSV requested")
     data_json = session.get('data')
     headers_json = session.get('headers')
     if not data_json or not headers_json:
         flash("No data available for download. Please upload an Excel file first.", "error")
+        logger.debug("No processed data in session")
         return redirect(url_for("index"))
     
     data = json.loads(data_json)
     headers = json.loads(headers_json)
-    
-    # Convert the data into a DataFrame
     df = pd.DataFrame(data, columns=headers)
-    
+
+    logger.debug("Converting processed data to CSV")
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
@@ -151,4 +180,5 @@ def download_csv():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    logger.debug("Starting Flask server on port %d", port)
     app.run(debug=True, host="0.0.0.0", port=port)
