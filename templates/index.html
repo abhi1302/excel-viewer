@@ -16,7 +16,7 @@
   {% endwith %}
 
   {% if not uploaded %}
-    <!-- Step One: Upload Form -->
+    <!-- Step One: File Upload Form -->
     <form method="post" enctype="multipart/form-data">
       <input type="hidden" name="step" value="upload">
       <label>Choose Excel file (.xlsx or .xls): </label>
@@ -25,21 +25,24 @@
       <button type="submit">Upload File</button>
     </form>
   {% else %}
-    <!-- Step Two: Parameters & Validation Form -->
+    <!-- Once a file is uploaded, show the preview -->
     <p><strong>Uploaded File:</strong> {{ session.original_filename }}</p>
+    <h3>File Preview (first 10 rows)</h3>
+    <div class="preview-container">
+      {{ preview_html|safe }}
+    </div>
+    
+    <!-- Step Two: Parameter Input & Validate Button -->
     <form method="post">
       <input type="hidden" name="step" value="validate">
       <label>Start reading from row (default = 7): </label>
-      <input type="number" name="start_row" value="{{ start_row if start_row is defined else 7 }}" min="1">
+      <input type="number" name="start_row" value="{{ start_row }}" min="1">
       <button type="submit">Validate Ratesheet</button>
     </form>
   {% endif %}
-  
+
   {% if data %}
     <h3>Excel Data {% if row_count %}(Total Rows: {{ row_count }}){% endif %}</h3>
-    <div class="download-buttons">
-      <!-- Download buttons can be added here if needed -->
-    </div>
     <div class="table-container">
       <table>
         <thead>

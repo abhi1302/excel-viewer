@@ -58,8 +58,26 @@ button {
   cursor: pointer;
 }
 
-.button:hover, button:hover {
+button:hover {
   background: #0056b3;
+}
+
+.preview-container {
+  margin: 20px 0;
+  overflow-x: auto;
+}
+
+.preview-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  white-space: nowrap;
 }
 
 .table-container {
