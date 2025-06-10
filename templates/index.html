@@ -2,9 +2,7 @@
 <html>
 <head>
   <title>Excel Viewer with Validation</title>
-  <!-- Linking external style.css from the static folder -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <!-- Optional: Remove inline styles if you want to solely use style.css -->
 </head>
 <body>
   <h2>Excel File Upload with Header Validation</h2>
@@ -30,6 +28,8 @@
 
   {% if data %}
     <h3>Excel Data</h3>
+    <!-- Download button (the href should be replaced with your download link route) -->
+    <a href="{{ url_for('download') }}" class="download-btn">Download Data</a>
     <div class="table-container">
       <table>
         <thead>
