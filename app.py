@@ -11,17 +11,15 @@ from flask_session import Session  # Import Flask-Session
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
 
-# Monkey-patch to add session_cookie_name for compatibility with Flask-Session
+# Monkey-patch to add session_cookie_name for compatibility
 if not hasattr(app, 'session_cookie_name'):
     app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
 
 # Configure Flask-Session for server-side sessions
-app.config["SESSION_TYPE"] = "filesystem"  # Or use any other backend like Redis
-app.config["SESSION_FILE_DIR"] = "./.flask_session/"  # Directory for session files
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_FILE_DIR"] = "./.flask_session/"
 app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
-
-# Initialize the Session extension
 Session(app)
 
 # Set up logging
@@ -31,7 +29,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Expected headers definition
 EXPECTED_HEADERS = [
     "BU PLMN Code",
     "TADIG PLMN Code",
@@ -94,6 +91,9 @@ def index():
     errors = []
     row_start = int(request.form.get("start_row", 7))
     logger.debug("Row start set to: %d", row_start)
+    
+    # Default row count value to pass to template
+    row_count = None
 
     if request.method == "POST":
         file = request.files.get("file")
@@ -101,13 +101,10 @@ def index():
             logger.debug("Received file: %s", file.filename)
             try:
                 file_bytes = file.read()
-                file_size = len(file_bytes)
-                logger.debug("File size: %d bytes", file_size)
-                # Store the original file in session (encoded in Base64) and filename
+                logger.debug("File size: %d bytes", len(file_bytes))
                 session['original_file'] = base64.b64encode(file_bytes).decode('utf-8')
                 session['original_filename'] = file.filename
 
-                # Validate headers using a BytesIO stream
                 stream_validation = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream_validation, header=None)
                 logger.debug("Excel file read for header validation successfully")
@@ -124,10 +121,13 @@ def index():
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
-                    # Store processed data in session (using default=str for non-serializable types)
+                    # Compute the row count for the data (total number of data rows)
+                    row_count = df_data.shape[0]
+                    logger.debug("Row count computed: %d", row_count)
+
                     session['data'] = json.dumps(data, default=str)
                     session['headers'] = json.dumps(headers)
-                    logger.debug("Data and headers stored in session")
+                    logger.debug("Data, headers, and row count stored in session")
             except Exception as e:
                 error_msg = f"Failed to process excel file: {e}"
                 errors.append(error_msg)
@@ -141,7 +141,8 @@ def index():
     else:
         logger.debug("GET method for index route")
 
-    return render_template("index.html", data=data, headers=headers, errors=errors, start_row=row_start)
+    # Pass row_count to template (it may be None if not set)
+    return render_template("index.html", data=data, headers=headers, errors=errors, start_row=row_start, row_count=row_count)
 
 @app.route("/download_original")
 def download_original():

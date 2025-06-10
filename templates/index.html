@@ -27,7 +27,7 @@
   {% endif %}
 
   {% if data %}
-    <h3>Excel Data</h3>
+    <h3>Excel Data {% if row_count %}(Total Rows: {{ row_count }}){% endif %}</h3>
     <div class="download-buttons">
       <a href="{{ url_for('download_original') }}" class="download-btn">Download Original File</a>
       <a href="{{ url_for('download_csv') }}" class="download-btn">Download CSV</a>
