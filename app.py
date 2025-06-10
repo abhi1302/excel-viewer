@@ -11,9 +11,13 @@ from flask_session import Session  # Import Flask-Session
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
 
+# Monkey-patch to add session_cookie_name for compatibility with Flask-Session
+if not hasattr(app, 'session_cookie_name'):
+    app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
+
 # Configure Flask-Session for server-side sessions
-app.config["SESSION_TYPE"] = "filesystem"  # You can also use Redis or other backends
-app.config["SESSION_FILE_DIR"] = "./.flask_session/"  # Directory to store session files
+app.config["SESSION_TYPE"] = "filesystem"  # Or use any other backend like Redis
+app.config["SESSION_FILE_DIR"] = "./.flask_session/"  # Directory for session files
 app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
@@ -120,7 +124,7 @@ def index():
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
-                    # Store processed data in session with default=str for non-serializable types
+                    # Store processed data in session (using default=str for non-serializable types)
                     session['data'] = json.dumps(data, default=str)
                     session['headers'] = json.dumps(headers)
                     logger.debug("Data and headers stored in session")
