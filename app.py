@@ -5,17 +5,17 @@ import base64
 import logging
 import pandas as pd
 from flask import Flask, render_template, request, flash, redirect, url_for, Response, session
-from flask_session import Session  # Import Flask-Session
+from flask_session import Session  # Flask-Session for server-side sessions
 
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
 
-# Monkey-patch to add session_cookie_name for compatibility
+# Monkey-patch for compatibility with Flask-Session (Flask 2.3+)
 if not hasattr(app, 'session_cookie_name'):
     app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
 
-# Configure Flask-Session for server-side sessions
+# Configure Flask-Session to use the filesystem
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./.flask_session/"
 app.config["SESSION_PERMANENT"] = False
@@ -29,6 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Expected column headers for the Excel data
 EXPECTED_HEADERS = [
     "BU PLMN Code",
     "TADIG PLMN Code",
@@ -62,6 +63,7 @@ EXPECTED_HEADERS = [
 ]
 
 def validate_excel(df):
+    """Validates the header row (row index 3 or fourth row) of the Excel file."""
     messages = []
     try:
         validation_checks = [
@@ -86,111 +88,76 @@ def validate_excel(df):
 @app.route("/", methods=["GET", "POST"])
 def index():
     logger.debug("Loading index route")
-    data = None
-    headers = []
-    errors = []
-    row_start = int(request.form.get("start_row", 7))
-    logger.debug("Row start set to: %d", row_start)
-    
-    # Default row count value to pass to template
-    row_count = None
-
+    # If the request is POST, determine which step we're processing
     if request.method == "POST":
-        file = request.files.get("file")
-        if file and (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
-            logger.debug("Received file: %s", file.filename)
-            try:
-                file_bytes = file.read()
-                logger.debug("File size: %d bytes", len(file_bytes))
-                session['original_file'] = base64.b64encode(file_bytes).decode('utf-8')
-                session['original_filename'] = file.filename
+        step = request.form.get("step")
+        # Step One: file upload
+        if step == "upload":
+            file = request.files.get("file")
+            if file and (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
+                logger.debug("Received file: %s", file.filename)
+                try:
+                    file_bytes = file.read()
+                    logger.debug("File size: %d bytes", len(file_bytes))
+                    # Store file (Base64 encoded) in session
+                    session["original_file"] = base64.b64encode(file_bytes).decode("utf-8")
+                    session["original_filename"] = file.filename
+                    flash("File uploaded successfully. Now set your parameters and click 'Validate Ratesheet'.", "info")
+                except Exception as e:
+                    flash(f"Error while uploading file: {e}", "error")
+                    logger.exception("Exception during file upload")
+            else:
+                flash("Please upload a valid Excel file (.xlsx or .xls)", "error")
+            # Redirect so that the GET method can show the next step form
+            return redirect(url_for("index"))
+        
+        # Step Two: process file with provided parameters and validate
+        elif step == "validate":
+            start_row = int(request.form.get("start_row", 7))
+            logger.debug("Parameter received: start_row = %d", start_row)
+            data = None
+            headers = None
+            row_count = None
 
+            original_file_b64 = session.get("original_file")
+            if not original_file_b64:
+                flash("No file uploaded. Please upload an Excel file first.", "error")
+                return redirect(url_for("index"))
+
+            try:
+                file_bytes = base64.b64decode(original_file_b64)
+                # Use a stream to perform header validation
                 stream_validation = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream_validation, header=None)
-                logger.debug("Excel file read for header validation successfully")
                 errors = validate_excel(df_raw)
-
                 if errors:
-                    flash("Excel validation errors encountered.", "error")
-                    logger.debug("Excel validation errors: %s", errors)
+                    flash("Validation errors: " + ", ".join(errors), "error")
+                    logger.debug("Validation errors: %s", errors)
                 else:
+                    # Process file using provided start_row (data starts from that row)
                     stream_data = io.BytesIO(file_bytes)
-                    df_data = pd.read_excel(stream_data, header=None, skiprows=row_start - 1)
+                    df_data = pd.read_excel(stream_data, header=None, skiprows=start_row - 1)
                     logger.debug("Excel file read for data processing successfully")
                     df_data.columns = EXPECTED_HEADERS
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
-
-                    # Compute the row count for the data (total number of data rows)
                     row_count = df_data.shape[0]
-                    logger.debug("Row count computed: %d", row_count)
-
-                    session['data'] = json.dumps(data, default=str)
-                    session['headers'] = json.dumps(headers)
-                    logger.debug("Data, headers, and row count stored in session")
+                    # Optionally, store processed data in session for further use (like download)
+                    session["data"] = json.dumps(data, default=str)
+                    session["headers"] = json.dumps(headers)
+                    flash(f"File processed successfully. Total rows: {row_count}", "success")
+                    logger.debug("Data processed successfully with row count: %d", row_count)
             except Exception as e:
-                error_msg = f"Failed to process excel file: {e}"
-                errors.append(error_msg)
-                flash(error_msg, "error")
-                logger.exception("Exception during file processing")
-        else:
-            error_msg = "Please upload a valid Excel file (.xlsx or .xls)"
-            errors.append(error_msg)
-            flash(error_msg, "error")
-            logger.debug("Invalid file provided or file type unsupported")
-    else:
-        logger.debug("GET method for index route")
-
-    # Pass row_count to template (it may be None if not set)
-    return render_template("index.html", data=data, headers=headers, errors=errors, start_row=row_start, row_count=row_count)
-
-@app.route("/download_original")
-def download_original():
-    logger.debug("Download original file requested")
-    original_file_b64 = session.get('original_file')
-    original_filename = session.get('original_filename', "original_file.xlsx")
-    if not original_file_b64:
-        flash("No original file available for download. Please upload an Excel file first.", "error")
-        logger.debug("No original file in session")
-        return redirect(url_for("index"))
+                flash(f"Failed to process Excel file: {e}", "error")
+                logger.exception("Exception during file processing in step 2")
+            # Render the page in step two, displaying the results (if available)
+            return render_template("index.html", 
+                                   uploaded=True, start_row=start_row, 
+                                   data=data, headers=headers, row_count=row_count)
     
-    file_bytes = base64.b64decode(original_file_b64)
-    if original_filename.endswith(".xls"):
-        mimetype = "application/vnd.ms-excel"
-    else:
-        mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    
-    logger.debug("Returning original file: %s", original_filename)
-    return Response(
-        file_bytes,
-        mimetype=mimetype,
-        headers={"Content-Disposition": f"attachment; filename={original_filename}"}
-    )
-
-@app.route("/download_csv")
-def download_csv():
-    logger.debug("Download CSV requested")
-    data_json = session.get('data')
-    headers_json = session.get('headers')
-    if not data_json or not headers_json:
-        flash("No data available for download. Please upload an Excel file first.", "error")
-        logger.debug("No processed data in session")
-        return redirect(url_for("index"))
-    
-    data = json.loads(data_json)
-    headers = json.loads(headers_json)
-    df = pd.DataFrame(data, columns=headers)
-
-    logger.debug("Converting processed data to CSV")
-    csv_buffer = io.StringIO()
-    df.to_csv(csv_buffer, index=False)
-    csv_buffer.seek(0)
-    
-    return Response(
-        csv_buffer,
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=excel_data.csv"}
-    )
+    # GET request: decide which form to show based on whether a file was already uploaded
+    uploaded = "original_file" in session
+    return render_template("index.html", uploaded=uploaded)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
