@@ -5,15 +5,24 @@ import base64
 import logging
 import pandas as pd
 from flask import Flask, render_template, request, flash, redirect, url_for, Response, session
+from flask_session import Session  # Import Flask-Session
 
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
+
+# Configure Flask-Session for server-side sessions
+app.config["SESSION_TYPE"] = "filesystem"  # You can also use Redis or other backends
+app.config["SESSION_FILE_DIR"] = "./.flask_session/"  # Directory to store session files
+app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+
+# Initialize the Session extension
+Session(app)
 
 # Set up logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Set to DEBUG to capture all log messages
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
