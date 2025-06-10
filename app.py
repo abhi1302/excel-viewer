@@ -81,8 +81,9 @@ def process_excel():
         flash("Please upload a valid Excel file.", "error")
     return redirect(url_for("index"))
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
+    # Your multi-step logic goes here
     return render_template("index.html")
 
 if __name__ == "__main__":

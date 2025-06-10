@@ -17,7 +17,7 @@
 
   {% if not uploaded %}
     <!-- Step One: File Upload Form -->
-    <form method="post" enctype="multipart/form-data">
+	<form method="post" enctype="multipart/form-data" action="/">
       <input type="hidden" name="step" value="upload">
       <label>Choose Excel file (.xlsx or .xls): </label>
       <input type="file" name="file" required>
