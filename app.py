@@ -81,10 +81,51 @@ def process_excel():
         flash("Please upload a valid Excel file.", "error")
     return redirect(url_for("index"))
 
+    
 @app.route("/", methods=["GET", "POST"])
 def index():
-    # Your multi-step logic goes here
-    return render_template("index.html")
+    logger.debug("Entered index route with method: %s", request.method)
+    if request.method == "POST":
+        step = request.form.get("step")
+        logger.debug("Form submitted with step: %s", step)
+        
+        if step == "upload":
+            file = request.files.get("file")
+            logger.debug("File from form: %s", file)
+            
+            if file and (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
+                logger.debug("Received file: %s", file.filename)
+                try:
+                    file_bytes = file.read()
+                    logger.debug("Read %d bytes from file", len(file_bytes))
+                    session["original_file"] = base64.b64encode(file_bytes).decode("utf-8")
+                    session["original_filename"] = file.filename
+                    flash("File uploaded successfully. Please review the preview and set parameters.", "info")
+                    logger.debug("File stored in session successfully.")
+                except Exception as e:
+                    flash(f"Error while uploading file: {e}", "error")
+                    logger.exception("Exception during file upload")
+            else:
+                flash("Please upload a valid Excel file (.xlsx or .xls)", "error")
+                logger.debug("Invalid file provided or file type unsupported")
+                
+            # Redirect to GET to show preview/form
+            return redirect(url_for("index"))
+        
+        elif step == "validate":
+            # Process step two (validation)
+            # ... (your existing code) ...
+            pass
+        
+    # GET method or after redirect
+    if "original_file" in session:
+        preview_html = generate_preview_html()
+        logger.debug("Rendering GET with preview_html")
+        return render_template("index.html", uploaded=True, preview_html=preview_html, start_row=7)
+    else:
+        logger.debug("Rendering GET without file uploaded")
+        return render_template("index.html", uploaded=False)
+    
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
