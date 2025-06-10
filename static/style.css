@@ -48,16 +48,37 @@ input[type="submit"]:focus {
 }
 
 button,
-input[type="submit"] {
+input[type="submit"],
+.download-btn {
   background: #007bff;
   color: #fff;
   border: none;
   cursor: pointer;
+  text-decoration: none;
 }
 
 button:hover,
-input[type="submit"]:hover {
+input[type="submit"]:hover,
+.download-btn:hover {
   background: #0056b3;
+}
+
+/* Download button specific styling */
+.download-buttons {
+  margin-bottom: 10px;
+}
+
+.download-btn {
+  display: inline-block;
+  background: #28a745;
+  padding: 10px 20px;
+  margin-right: 10px;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.download-btn:hover {
+  background: #218838;
 }
 
 /* Error Messages */
@@ -73,18 +94,17 @@ input[type="submit"]:hover {
   padding-left: 20px;
 }
 
-/* Table Styles */
+/* Responsive Table Container */
 .table-container {
-  background: #fff;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  overflow-x: auto;
 }
 
 table {
   border-collapse: collapse;
   width: 100%;
   table-layout: auto;
+  min-width: 800px;
 }
 
 table thead {
@@ -96,22 +116,7 @@ table th,
 table td {
   padding: 12px 15px;
   border: 1px solid #dee2e6;
-}
-
-/* Download Button */
-.download-btn {
-  display: inline-block;
-  background: #28a745;
-  color: #fff;
-  padding: 10px 20px;
-  margin-top: 10px;
-  text-decoration: none;
-  border-radius: 4px;
-  transition: background 0.3s ease;
-}
-
-.download-btn:hover {
-  background: #218838;
+  white-space: nowrap; /* Prevent cell text from wrapping */
 }
 
 /* Responsive Adjustments */

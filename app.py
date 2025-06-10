@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import io
 import json
+import base64
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
@@ -69,20 +70,28 @@ def index():
         file = request.files.get("file")
         if file and (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
             try:
-                # Read file for header validation
-                df_raw = pd.read_excel(file, header=None)
+                # Read file bytes for reuse.
+                file_bytes = file.read()
+                # Store original file (Base64 encoded) and filename in session for later download.
+                session['original_file'] = base64.b64encode(file_bytes).decode('utf-8')
+                session['original_filename'] = file.filename
+
+                # Validate headers using a BytesIO stream
+                stream_validation = io.BytesIO(file_bytes)
+                df_raw = pd.read_excel(stream_validation, header=None)
                 errors = validate_excel(df_raw)
 
                 if errors:
                     flash("Excel validation errors encountered.", "error")
                 else:
-                    file.seek(0)
-                    df_data = pd.read_excel(file, header=None, skiprows=row_start - 1)
+                    # Process data starting at row_start
+                    stream_data = io.BytesIO(file_bytes)
+                    df_data = pd.read_excel(stream_data, header=None, skiprows=row_start - 1)
                     df_data.columns = EXPECTED_HEADERS
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
                     
-                    # Use default=str to convert Pandas Timestamps to strings
+                    # Store processed data in session (JSON serialization with default=str for Timestamps)
                     session['data'] = json.dumps(data, default=str)
                     session['headers'] = json.dumps(headers)
             except Exception as e:
@@ -94,9 +103,30 @@ def index():
 
     return render_template("index.html", data=data, headers=headers, errors=errors, start_row=row_start)
 
-@app.route("/download")
-def download():
-    # Retrieve data from session
+@app.route("/download_original")
+def download_original():
+    # Retrieve the original file data from the session.
+    original_file_b64 = session.get('original_file')
+    original_filename = session.get('original_filename', "original_file.xlsx")
+    if not original_file_b64:
+        flash("No original file available for download. Please upload an Excel file first.", "error")
+        return redirect(url_for("index"))
+    
+    file_bytes = base64.b64decode(original_file_b64)
+    # Determine MIME type based on file extension (simplistic check)
+    if original_filename.endswith(".xls"):
+        mimetype = "application/vnd.ms-excel"
+    else:
+        mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    
+    return Response(
+        file_bytes,
+        mimetype=mimetype,
+        headers={"Content-Disposition": f"attachment; filename={original_filename}"}
+    )
+
+@app.route("/download_csv")
+def download_csv():
     data_json = session.get('data')
     headers_json = session.get('headers')
     if not data_json or not headers_json:
@@ -106,10 +136,9 @@ def download():
     data = json.loads(data_json)
     headers = json.loads(headers_json)
     
-    # Convert data into a DataFrame
+    # Convert the data into a DataFrame
     df = pd.DataFrame(data, columns=headers)
     
-    # Save DataFrame to CSV in a memory buffer
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
