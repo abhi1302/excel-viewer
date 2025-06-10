@@ -82,9 +82,8 @@ def index():
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
                     
-                    # Store data in session as JSON so that it can be used for download.
-                    # You might need to adjust based on data size and security.
-                    session['data'] = json.dumps(data)
+                    # Use default=str to convert Pandas Timestamps to strings
+                    session['data'] = json.dumps(data, default=str)
                     session['headers'] = json.dumps(headers)
             except Exception as e:
                 errors.append(f"Failed to process excel file: {e}")
@@ -107,13 +106,13 @@ def download():
     data = json.loads(data_json)
     headers = json.loads(headers_json)
     
-    # Convert the data into a DataFrame
+    # Convert data into a DataFrame
     df = pd.DataFrame(data, columns=headers)
     
-    # Use an in-memory buffer to save CSV data
+    # Save DataFrame to CSV in a memory buffer
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
-    csv_buffer.seek(0)  # Rewind the buffer to the beginning
+    csv_buffer.seek(0)
     
     return Response(
         csv_buffer,
