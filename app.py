@@ -9,6 +9,7 @@ from flask_session import Session
 from sqlalchemy import create_engine, Column, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
@@ -28,7 +29,6 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(me
 logger = logging.getLogger(__name__)
 
 # Configure SQLAlchemy using Render's external database URL.
-# It is best to store the connection string in an environment variable.
 PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", 
     "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik"
 )
@@ -59,19 +59,41 @@ def get_country_from_tadig(tadig_code):
     finally:
         db.close()
 
+# Function to generate a preview of uploaded Excel file (first 10 rows)
+def generate_preview_html():
+    original_file_b64 = session.get("original_file")
+    if not original_file_b64:
+        return "<p>No file uploaded yet.</p>"
+
+    try:
+        file_bytes = base64.b64decode(original_file_b64)
+        stream = io.BytesIO(file_bytes)
+        df_preview = pd.read_excel(stream, header=None)
+        preview_html = df_preview.head(10).to_html(classes="preview-table", index=False, border=1)
+        return preview_html
+    except Exception as e:
+        logger.exception("Error generating preview")
+        return f"<p>Error generating preview: {e}</p>"
+
 # Example Excel processing route that integrates the lookup:
 @app.route("/process_excel", methods=["POST"])
 def process_excel():
     file = request.files.get("file")
     if file and file.filename.endswith((".xlsx", ".xls")):
         try:
+            logger.debug("Processing uploaded file: %s", file.filename)
             file_bytes = file.read()
             df = pd.read_excel(io.BytesIO(file_bytes), header=0)
-            # Assuming your Excel file has a column "TADIG PLMN Code"
-            # Append a 'Country' column by looking up based on first 3 letters.
-            df["Country"] = df["TADIG PLMN Code"].apply(get_country_from_tadig)
-            
-            # Optional: Convert the dataframe data to HTML for rendering.
+
+            # Append 'Country' column based on first 3 letters of TADIG PLMN Code
+            if "TADIG PLMN Code" in df.columns:
+                df["Country"] = df["TADIG PLMN Code"].apply(get_country_from_tadig)
+            else:
+                flash("Error: Column 'TADIG PLMN Code' not found in the uploaded file.", "error")
+                logger.error("Column 'TADIG PLMN Code' not found in uploaded Excel file.")
+                return redirect(url_for("index"))
+
+            # Convert the dataframe data to HTML for rendering
             table_html = df.to_html(classes="data-table", index=False)
             return render_template("results.html", table_html=table_html)
         except Exception as e:
@@ -81,20 +103,23 @@ def process_excel():
         flash("Please upload a valid Excel file.", "error")
     return redirect(url_for("index"))
 
-    
 @app.route("/", methods=["GET", "POST"])
 def index():
     logger.debug("Entered index route with method: %s", request.method)
     if request.method == "POST":
         step = request.form.get("step")
         logger.debug("Form submitted with step: %s", step)
-        
+
         if step == "upload":
             file = request.files.get("file")
-            logger.debug("File from form: %s", file)
-            
-            if file and (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
-                logger.debug("Received file: %s", file.filename)
+            if not file:
+                flash("No file selected. Please upload a valid Excel file.", "error")
+                logger.error("No file selected for upload.")
+                return redirect(url_for("index"))
+
+            logger.debug("Received file: %s", file.filename)
+
+            if file.filename.endswith(".xlsx") or file.filename.endswith(".xls"):
                 try:
                     file_bytes = file.read()
                     logger.debug("Read %d bytes from file", len(file_bytes))
@@ -106,17 +131,16 @@ def index():
                     flash(f"Error while uploading file: {e}", "error")
                     logger.exception("Exception during file upload")
             else:
-                flash("Please upload a valid Excel file (.xlsx or .xls)", "error")
-                logger.debug("Invalid file provided or file type unsupported")
-                
+                flash("Invalid file type. Only .xlsx and .xls files are allowed.", "error")
+                logger.error("Invalid file type: %s", file.filename)
+
             # Redirect to GET to show preview/form
             return redirect(url_for("index"))
-        
+
         elif step == "validate":
-            # Process step two (validation)
-            # ... (your existing code) ...
+            # Future validation step implementation
             pass
-        
+
     # GET method or after redirect
     if "original_file" in session:
         preview_html = generate_preview_html()
@@ -125,7 +149,6 @@ def index():
     else:
         logger.debug("Rendering GET without file uploaded")
         return render_template("index.html", uploaded=False)
-    
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
