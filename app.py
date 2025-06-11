@@ -19,16 +19,20 @@ app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./.flask_session/"
 app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+app.config["SESSION_COOKIE_NAME"] = "session"  # explicitly set the cookie name
+
+# Set session_cookie_name explicitly to satisfy Flask-Session requirements
+app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
+
 Session(app)
 
 # Logging setup
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Configure SQLAlchemy using Render's external database URL
+# Configure SQLAlchemy using Render's external database URL.
 PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", 
-    "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik"
-)
+    "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik")
 engine = create_engine(PG_DATABASE_URL)
 Base = declarative_base()
 
@@ -42,7 +46,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Function to validate the Excel header.
 def validate_excel(df):
     """
-    Validates the header row (assumed to be row 4, i.e. index 3) of the Excel sheet.
+    Validates the header row (assumed to be row 4, index 3) of the Excel sheet.
     It checks that the first five cells contain the expected values.
     """
     messages = []
@@ -69,7 +73,8 @@ def validate_excel(df):
 # Function to generate an HTML preview from the uploaded Excel file.
 def generate_preview_html():
     """
-    Reads the uploaded file from session, loads it with pandas, and returns an HTML preview (first 10 rows).
+    Reads the uploaded file from session, loads it via pandas,
+    and returns an HTML preview (first 10 rows).
     """
     original_file_b64 = session.get("original_file")
     if not original_file_b64:
@@ -88,7 +93,7 @@ def generate_preview_html():
 def index():
     logger.debug("Entered index route with method: %s", request.method)
 
-    # Determine if a file has been uploaded already by checking the session.
+    # Determine if a file has been uploaded by checking session.
     uploaded = "original_file" in session
     data, headers = None, None
 
@@ -97,7 +102,6 @@ def index():
         logger.debug("Form submitted with step: %s", step)
 
         if step == "upload":
-            # First step: Upload file
             file = request.files.get("file")
             if not file:
                 flash("No file selected. Please upload a valid Excel file.", "error")
@@ -124,7 +128,6 @@ def index():
             return redirect(url_for("index"))
 
         elif step == "validate":
-            # Second step: Validate the file
             logger.debug("Starting validation process.")
             if not uploaded:
                 flash("No file found. Please upload an Excel file first.", "error")
@@ -145,17 +148,16 @@ def index():
                     logger.debug("Validation passed without errors.")
 
                     # Process the file further if needed.
-                    # Here we assume that the actual data starts from row 7 (by default)
+                    # In this example, we assume the actual data starts from row 7.
                     row_start = int(request.form.get("start_row", 7))
-                    # Re-read the file (you could also reset the stream pointer)
+                    # Re-read the file from bytes to reset the stream.
                     df_data = pd.read_excel(io.BytesIO(file_bytes), header=None, skiprows=row_start - 1)
                     
-                    # Set expected headers – adjust as necessary
+                    # Set expected headers (adjust as needed)
                     df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
-                    # Store the validated data in session for persistence (if needed)
                     session["validated_data"] = json.dumps(data, default=str)
                     session["validated_headers"] = json.dumps(headers)
                     logger.debug("Validated data stored in session.")
