@@ -4,24 +4,23 @@
   <title>Excel Viewer and Ratesheet Validator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    /* Container that allows horizontal scrolling */
+    /* Container for horizontal scrolling */
     .scroll-container {
       overflow-x: auto;
       width: 100%;
       border: 1px solid #ddd;
       margin-top: 20px;
     }
-    /* Ensure the table inside the scroll container has a fixed minimum width */
+    /* Set a minimum width for the table to ensure scrolling when many columns exist */
     .scroll-container table {
-      min-width: 1200px; /* Increase this value as needed */
+      min-width: 1200px; /* Adjust as needed for your layout */
       border-collapse: collapse;
       width: 100%;
     }
-    /* Table cell styling */
     .scroll-container th, .scroll-container td {
       border: 1px solid #ddd;
       padding: 8px;
-      white-space: nowrap; /* Prevent wrapping */
+      white-space: nowrap;
       text-align: left;
     }
     .scroll-container th {

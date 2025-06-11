@@ -47,23 +47,22 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def validate_excel(df):
     """
     Validates the header row (assumed to be row 4, index 3) of the Excel sheet.
-    It checks that the first five cells contain the expected values.
+    It checks that the expected header values appear in that row.
+    (Adjust the expected values as necessary.)
     """
     messages = []
     try:
-        validation_checks = [
-            ("BU PLMN Code", 0),
-            ("TADIG PLMN Code", 1),
-            ("Start date", 2),
-            ("End date", 3),
-            ("Currency", 4)
-        ]
-        for expected, col_index in validation_checks:
-            actual = str(df.iloc[3, col_index]).strip()
+        # In your original example you expected only 5 columns; now assume the header row actually contains 29 values.
+        # Here, we define an expected list (for demo purposes, we assume it as a list with 29 items).
+        # You need to adjust these values to match your file's expectations.
+        expected_headers = ["Header" + str(i + 1) for i in range(29)]
+        # Read row 4 (index 3) to compare:
+        actual_headers = [str(x).strip() for x in df.iloc[3, :len(expected_headers)]]
+        for i, (expected, actual) in enumerate(zip(expected_headers, actual_headers)):
             if actual != expected:
-                messages.append(f"Cell {chr(65+col_index)}4 = '{actual}' ≠ '{expected}'")
-                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'",
-                             chr(65+col_index), expected, actual)
+                messages.append(f"Cell {chr(65+i)}4 = '{actual}' ≠ '{expected}'")
+                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", 
+                             chr(65+i), expected, actual)
     except Exception as e:
         err_msg = f"Error during header validation: {e}"
         messages.append(err_msg)
@@ -92,8 +91,7 @@ def generate_preview_html():
 @app.route("/", methods=["GET", "POST"])
 def index():
     logger.debug("Entered index route with method: %s", request.method)
-
-    # Determine if a file has been uploaded by checking session.
+    # Check if file was uploaded.
     uploaded = "original_file" in session
     data, headers = None, None
 
@@ -135,6 +133,7 @@ def index():
 
             try:
                 file_bytes = base64.b64decode(session["original_file"])
+                # Validate header using entire file (or at least row 4)
                 stream = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream, header=None)
                 validation_errors = validate_excel(df_raw)
@@ -147,17 +146,11 @@ def index():
                     logger.debug("Validation passed without errors.")
 
                     row_start = int(request.form.get("start_row", 7))
-                    # Re-read file bytes to reset the stream pointer.
+                    # Re-read file bytes to reset the stream.
+                    # Here, we no longer limit the number of columns.
                     df_data = pd.read_excel(io.BytesIO(file_bytes), header=None, skiprows=row_start - 1)
                     
-                    # If the file has more columns than required, select only the first 5 columns.
-                    if df_data.shape[1] >= 5:
-                        df_data = df_data.iloc[:, :5]
-                        df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
-                    else:
-                        flash("The file does not contain enough columns.", "error")
-                        return redirect(url_for("index"))
-                    
+                    # Do not slice columns—show all columns (e.g., 29 columns).
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
@@ -207,15 +200,8 @@ def download_csv():
         return redirect(url_for("index"))
     try:
         file_bytes = base64.b64decode(original_file_b64)
-        # Read the Excel file (all columns are read; adjust if needed)
         df = pd.read_excel(io.BytesIO(file_bytes), header=None)
-        # For conversion we are just taking first 5 columns similar to our validation.
-        if df.shape[1] >= 5:
-            df = df.iloc[:, :5]
-            df.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
-        else:
-            flash("The file does not contain enough columns for CSV conversion.", "error")
-            return redirect(url_for("index"))
+        # Do not slice columns here so that all columns (e.g., 29) are converted.
         csv_bytes = df.to_csv(index=False).encode("utf-8")
         return send_file(
             io.BytesIO(csv_bytes),
