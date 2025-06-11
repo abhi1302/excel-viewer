@@ -26,7 +26,9 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(me
 logger = logging.getLogger(__name__)
 
 # Configure SQLAlchemy using Render's external database URL
-PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik")
+PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", 
+    "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik"
+)
 engine = create_engine(PG_DATABASE_URL)
 Base = declarative_base()
 
@@ -37,9 +39,12 @@ class Country(Base):
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Function to validate the Excel header
+# Function to validate the Excel header.
 def validate_excel(df):
-    """ Validates the header row (assumed to be row 4, index 3) of the Excel sheet."""
+    """
+    Validates the header row (assumed to be row 4, i.e. index 3) of the Excel sheet.
+    It checks that the first five cells contain the expected values.
+    """
     messages = []
     try:
         validation_checks = [
@@ -53,7 +58,8 @@ def validate_excel(df):
             actual = str(df.iloc[3, col_index]).strip()
             if actual != expected:
                 messages.append(f"Cell {chr(65+col_index)}4 = '{actual}' ≠ '{expected}'")
-                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", chr(65+col_index), expected, actual)
+                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'",
+                             chr(65+col_index), expected, actual)
     except Exception as e:
         err_msg = f"Error during header validation: {e}"
         messages.append(err_msg)
@@ -62,7 +68,9 @@ def validate_excel(df):
 
 # Function to generate an HTML preview from the uploaded Excel file.
 def generate_preview_html():
-    """ Generates an HTML preview from the uploaded Excel file. """
+    """
+    Reads the uploaded file from session, loads it with pandas, and returns an HTML preview (first 10 rows).
+    """
     original_file_b64 = session.get("original_file")
     if not original_file_b64:
         return "<p>No file uploaded yet.</p>"
@@ -80,6 +88,7 @@ def generate_preview_html():
 def index():
     logger.debug("Entered index route with method: %s", request.method)
 
+    # Determine if a file has been uploaded already by checking the session.
     uploaded = "original_file" in session
     data, headers = None, None
 
@@ -88,6 +97,7 @@ def index():
         logger.debug("Form submitted with step: %s", step)
 
         if step == "upload":
+            # First step: Upload file
             file = request.files.get("file")
             if not file:
                 flash("No file selected. Please upload a valid Excel file.", "error")
@@ -99,6 +109,7 @@ def index():
                 try:
                     file_bytes = file.read()
                     logger.debug("Read %d bytes from file", len(file_bytes))
+                    # Store the file in session (Base64 encoded)
                     session["original_file"] = base64.b64encode(file_bytes).decode("utf-8")
                     session["original_filename"] = file.filename
                     flash("File uploaded successfully. Please review the preview and set parameters.", "info")
@@ -113,6 +124,7 @@ def index():
             return redirect(url_for("index"))
 
         elif step == "validate":
+            # Second step: Validate the file
             logger.debug("Starting validation process.")
             if not uploaded:
                 flash("No file found. Please upload an Excel file first.", "error")
@@ -132,13 +144,18 @@ def index():
                     flash("Validation successful!", "success")
                     logger.debug("Validation passed without errors.")
 
+                    # Process the file further if needed.
+                    # Here we assume that the actual data starts from row 7 (by default)
                     row_start = int(request.form.get("start_row", 7))
-                    df_data = pd.read_excel(stream, header=None, skiprows=row_start - 1)
+                    # Re-read the file (you could also reset the stream pointer)
+                    df_data = pd.read_excel(io.BytesIO(file_bytes), header=None, skiprows=row_start - 1)
                     
+                    # Set expected headers – adjust as necessary
                     df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
+                    # Store the validated data in session for persistence (if needed)
                     session["validated_data"] = json.dumps(data, default=str)
                     session["validated_headers"] = json.dumps(headers)
                     logger.debug("Validated data stored in session.")
@@ -148,6 +165,7 @@ def index():
                 logger.exception("Exception during validation step")
                 return redirect(url_for("index"))
 
+    # Retrieve validated data from session (if available)
     if "validated_data" in session and "validated_headers" in session:
         data = json.loads(session["validated_data"])
         headers = json.loads(session["validated_headers"])
