@@ -4,9 +4,28 @@
   <title>Excel Viewer and Ratesheet Validator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    /* Inline CSS to make the table scrollable horizontally */
+    /* Container that allows horizontal scrolling */
     .scroll-container {
       overflow-x: auto;
+      width: 100%;
+      border: 1px solid #ddd;
+      margin-top: 20px;
+    }
+    /* Ensure the table has a minimum width */
+    .scroll-container table {
+      min-width: 800px; /* adjust this value as needed */
+      border-collapse: collapse;
+      width: 100%;
+    }
+    /* Basic table styling */
+    .scroll-container th, .scroll-container td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      white-space: nowrap; /* Prevent text from wrapping */
+      text-align: left;
+    }
+    .scroll-container th {
+      background-color: #f2f2f2;
     }
   </style>
 </head>
@@ -56,26 +75,24 @@
   {% if data and headers %}
     <h3>Validated Excel Data (Total Rows: {{ data|length }})</h3>
     <div class="scroll-container">
-      <div class="table-container">
-        <table>
-          <thead>
+      <table>
+        <thead>
+          <tr>
+            {% for col in headers %}
+              <th>{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
             <tr>
               {% for col in headers %}
-                <th>{{ col }}</th>
+                <td>{{ row[col] }}</td>
               {% endfor %}
             </tr>
-          </thead>
-          <tbody>
-            {% for row in data %}
-              <tr>
-                {% for col in headers %}
-                  <td>{{ row[col] }}</td>
-                {% endfor %}
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   {% endif %}
 </body>
