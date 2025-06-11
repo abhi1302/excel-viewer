@@ -4,7 +4,7 @@ import io
 import json
 import logging
 import pandas as pd
-from flask import Flask, render_template, request, flash, redirect, url_for, Response, session
+from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_session import Session
 from sqlalchemy import create_engine, Column, String, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -60,6 +60,7 @@ def validate_excel(df):
         logger.exception("Exception during Excel header validation")
     return messages
 
+# Function to generate an HTML preview from the uploaded Excel file.
 def generate_preview_html():
     """ Generates an HTML preview from the uploaded Excel file. """
     original_file_b64 = session.get("original_file")
