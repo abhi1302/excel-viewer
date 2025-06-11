@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(me
 logger = logging.getLogger(__name__)
 
 # Configure SQLAlchemy using Render's external database URL.
-PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL",
+PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", 
     "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik"
 )
 engine = create_engine(PG_DATABASE_URL)
@@ -44,13 +44,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Function to validate the Excel header.
 def validate_excel(df):
-    """
-    Validates the header row (assumed to be row 4, i.e. index 3) of the Excel sheet.
-    Checks that the first five cells contain the expected values.
-    """
+    """ Validates the header row (assumed to be row 4, index 3) of the Excel sheet."""
     messages = []
     try:
-        # Expected headers for columns A to E (change these as needed)
         validation_checks = [
             ("BU PLMN Code", 0),
             ("TADIG PLMN Code", 1),
@@ -62,7 +58,7 @@ def validate_excel(df):
             actual = str(df.iloc[3, col_index]).strip()
             if actual != expected:
                 messages.append(f"Cell {chr(65+col_index)}4 = '{actual}' ≠ '{expected}'")
-                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'",
+                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", 
                              chr(65+col_index), expected, actual)
     except Exception as e:
         err_msg = f"Error during header validation: {e}"
@@ -95,41 +91,18 @@ def generate_preview_html():
         file_bytes = base64.b64decode(original_file_b64)
         stream = io.BytesIO(file_bytes)
         df_preview = pd.read_excel(stream, header=None)
-        # Generate preview: First 10 rows as an HTML table.
         preview_html = df_preview.head(10).to_html(classes="preview-table", index=False, border=1)
         return preview_html
     except Exception as e:
         logger.exception("Error generating preview")
         return f"<p>Error generating preview: {e}</p>"
 
-# Excel processing route that integrates the country lookup (if needed in the future).
-@app.route("/process_excel", methods=["POST"])
-def process_excel():
-    file = request.files.get("file")
-    if file and file.filename.endswith((".xlsx", ".xls")):
-        try:
-            logger.debug("Processing uploaded file: %s", file.filename)
-            file_bytes = file.read()
-            df = pd.read_excel(io.BytesIO(file_bytes), header=0)
-            # Check for the expected column and append 'Country' via lookup.
-            if "TADIG PLMN Code" in df.columns:
-                df["Country"] = df["TADIG PLMN Code"].apply(get_country_from_tadig)
-            else:
-                flash("Error: Column 'TADIG PLMN Code' not found in the uploaded file.", "error")
-                logger.error("Column 'TADIG PLMN Code' missing in uploaded Excel file.")
-                return redirect(url_for("index"))
-            table_html = df.to_html(classes="data-table", index=False)
-            return render_template("results.html", table_html=table_html)
-        except Exception as e:
-            logger.exception("Error processing Excel file")
-            flash(f"Error processing Excel file: {e}", "error")
-    else:
-        flash("Please upload a valid Excel file.", "error")
-    return redirect(url_for("index"))
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     logger.debug("Entered index route with method: %s", request.method)
+    
+    data, headers = None, None
+
     if request.method == "POST":
         step = request.form.get("step")
         logger.debug("Form submitted with step: %s", step)
@@ -140,6 +113,7 @@ def index():
                 flash("No file selected. Please upload a valid Excel file.", "error")
                 logger.error("No file selected for upload.")
                 return redirect(url_for("index"))
+
             logger.debug("Received file: %s", file.filename)
             if file.filename.endswith(".xlsx") or file.filename.endswith(".xls"):
                 try:
@@ -164,31 +138,46 @@ def index():
                 flash("No file found. Please upload an Excel file first.", "error")
                 logger.error("Validation failed: No file in session.")
                 return redirect(url_for("index"))
+
             try:
                 file_bytes = base64.b64decode(original_file_b64)
                 stream = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream, header=None)
                 validation_errors = validate_excel(df_raw)
+
                 if validation_errors:
                     flash("Validation errors detected: " + ", ".join(validation_errors), "error")
                     logger.debug("Validation errors: %s", validation_errors)
                 else:
                     flash("Validation successful!", "success")
                     logger.debug("Validation passed without errors.")
+
+                    # Process and display the validated data
+                    row_start = 7  # Default start row
+                    df_data = pd.read_excel(stream, header=None, skiprows=row_start - 1)
+                    
+                    # Define expected headers
+                    df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
+                    data = df_data.fillna("").to_dict(orient="records")
+                    headers = df_data.columns.tolist()
+
+                    # Store validated data in session
+                    session["validated_data"] = json.dumps(data, default=str)
+                    session["validated_headers"] = json.dumps(headers)
+                    logger.debug("Validated data stored in session.")
+
             except Exception as e:
                 flash(f"Error processing validation: {e}", "error")
                 logger.exception("Exception during validation step")
-            preview_html = generate_preview_html()
-            return render_template("index.html", uploaded=True, preview_html=preview_html, start_row=7)
+                return redirect(url_for("index"))
 
-    # For GET requests or after redirects:
-    if "original_file" in session:
-        preview_html = generate_preview_html()
-        logger.debug("Rendering GET with preview_html")
-        return render_template("index.html", uploaded=True, preview_html=preview_html, start_row=7)
-    else:
-        logger.debug("Rendering GET without file uploaded")
-        return render_template("index.html", uploaded=False)
+    # Retrieve validated data if available
+    if "validated_data" in session and "validated_headers" in session:
+        data = json.loads(session["validated_data"])
+        headers = json.loads(session["validated_headers"])
+
+    preview_html = generate_preview_html()
+    return render_template("index.html", uploaded=True, preview_html=preview_html, start_row=7, data=data, headers=headers)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

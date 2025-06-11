@@ -17,7 +17,7 @@
 
   {% if not uploaded %}
     <!-- Step One: File Upload Form -->
-	<form method="post" enctype="multipart/form-data" action="/">
+    <form method="post" enctype="multipart/form-data" action="/">
       <input type="hidden" name="step" value="upload">
       <label>Choose Excel file (.xlsx or .xls): </label>
       <input type="file" name="file" required>
@@ -33,7 +33,7 @@
     </div>
     
     <!-- Step Two: Parameter Input & Validate Button -->
-    <form method="post">
+    <form method="post" action="/">
       <input type="hidden" name="step" value="validate">
       <label>Start reading from row (default = 7): </label>
       <input type="number" name="start_row" value="{{ start_row }}" min="1">
@@ -41,8 +41,8 @@
     </form>
   {% endif %}
 
-  {% if data %}
-    <h3>Excel Data {% if row_count %}(Total Rows: {{ row_count }}){% endif %}</h3>
+  {% if data and headers %}
+    <h3>Validated Excel Data (Total Rows: {{ data|length }})</h3>
     <div class="table-container">
       <table>
         <thead>
