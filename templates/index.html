@@ -3,6 +3,12 @@
 <head>
   <title>Excel Viewer and Ratesheet Validator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    /* Inline CSS to make the table scrollable horizontally */
+    .scroll-container {
+      overflow-x: auto;
+    }
+  </style>
 </head>
 <body>
   <h2>Excel Ratesheet Tool</h2>
@@ -32,6 +38,12 @@
       {{ preview_html|safe }}
     </div>
 
+    <!-- Buttons for download -->
+    <div style="margin-top: 10px;">
+      <a href="{{ url_for('download_original') }}"><button type="button">Download Original Excel</button></a>
+      <a href="{{ url_for('download_csv') }}"><button type="button">Download CSV Version</button></a>
+    </div>
+
     <!-- Step Two: Validation Form (Only Appears After Upload) -->
     <form method="post" action="/">
       <input type="hidden" name="step" value="validate">
@@ -43,25 +55,27 @@
 
   {% if data and headers %}
     <h3>Validated Excel Data (Total Rows: {{ data|length }})</h3>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            {% for col in headers %}
-              <th>{{ col }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in data %}
+    <div class="scroll-container">
+      <div class="table-container">
+        <table>
+          <thead>
             <tr>
               {% for col in headers %}
-                <td>{{ row[col] }}</td>
+                <th>{{ col }}</th>
               {% endfor %}
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for row in data %}
+              <tr>
+                {% for col in headers %}
+                  <td>{{ row[col] }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   {% endif %}
 </body>
