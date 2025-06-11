@@ -21,7 +21,7 @@ app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.config["SESSION_COOKIE_NAME"] = "session"  # explicitly set cookie name
 
-# Set session_cookie_name explicitly for Flask-Session
+# Set session_cookie_name explicitly for Flask-Session compatibility
 app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
 
 Session(app)
@@ -31,8 +31,10 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(me
 logger = logging.getLogger(__name__)
 
 # Configure SQLAlchemy using Render's external database URL.
-PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", 
-    "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik")
+PG_DATABASE_URL = os.environ.get(
+    "PG_DATABASE_URL",
+    "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik"
+)
 engine = create_engine(PG_DATABASE_URL)
 Base = declarative_base()
 
@@ -43,33 +45,74 @@ class Country(Base):
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Function to validate the Excel header.
 def validate_excel(df):
     """
     Validates the header row (assumed to be row 4, index 3) of the Excel sheet.
-    It checks that the expected header values appear in that row.
-    (Adjust the expected values as necessary.)
+    Converts any NaN values to empty strings in the actual header row before comparing.
+    Expected header list:
+      0: "BU PLMN Code"
+      1: "TADIG PLMN Code"
+      2: "Start date"
+      3: "End date"
+      4: "Currency"
+      5: "MOC Call"
+      6 to 16: "" (empty)
+      17: "MTC Call"
+      18: ""
+      19: "MO-SMS"
+      20: "GPRS"
+      21 to 22: "" (empty)
+      23: "VoLTE"
+      24: ""
+      25: "Tax applicable"
+      26: ""
+      27: "Tax included in the rate"
+      28: "Bearer Service included in Special IOT"
     """
     messages = []
     try:
-        # In your original example you expected only 5 columns; now assume the header row actually contains 29 values.
-        # Here, we define an expected list (for demo purposes, we assume it as a list with 29 items).
-        # You need to adjust these values to match your file's expectations.
-        expected_headers = ["Header" + str(i + 1) for i in range(29)]
-        # Read row 4 (index 3) to compare:
-        actual_headers = [str(x).strip() for x in df.iloc[3, :len(expected_headers)]]
+        # Define expected headers (29 columns)
+        expected_headers = [
+            "BU PLMN Code",
+            "TADIG PLMN Code",
+            "Start date",
+            "End date",
+            "Currency",
+            "MOC Call",
+            "", "", "", "", "", "", "", "", "", "", "",
+            "MTC Call",
+            "",
+            "MO-SMS",
+            "GPRS",
+            "", "",
+            "VoLTE",
+            "",
+            "Tax applicable",
+            "",
+            "Tax included in the rate",
+            "Bearer Service included in Special IOT"
+        ]
+        # Read the actual header row (row 4 -> index 3) for the first 29 columns.
+        actual_headers = []
+        for x in df.iloc[3, :len(expected_headers)]:
+            # Convert NaN values (or similar) to empty string
+            if pd.isna(x):
+                actual_headers.append("")
+            else:
+                actual_headers.append(str(x).strip())
+        # Compare expected vs. actual headers element-wise.
         for i, (expected, actual) in enumerate(zip(expected_headers, actual_headers)):
             if actual != expected:
-                messages.append(f"Cell {chr(65+i)}4 = '{actual}' ≠ '{expected}'")
-                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", 
-                             chr(65+i), expected, actual)
+                # Convert the column index to a letter (A, B, etc.)
+                col_letter = chr(65 + i) if i < 26 else chr(65 + i - 26)  # basic conversion; adjust if >26 needed
+                messages.append(f"Cell {col_letter}4 = '{actual}' ≠ '{expected}'")
+                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", col_letter, expected, actual)
     except Exception as e:
         err_msg = f"Error during header validation: {e}"
         messages.append(err_msg)
         logger.exception("Exception during Excel header validation")
     return messages
 
-# Function to generate an HTML preview from the uploaded Excel file.
 def generate_preview_html():
     """
     Reads the uploaded file from session, loads it via pandas,
@@ -91,7 +134,7 @@ def generate_preview_html():
 @app.route("/", methods=["GET", "POST"])
 def index():
     logger.debug("Entered index route with method: %s", request.method)
-    # Check if file was uploaded.
+    # Check if a file has been uploaded by checking session.
     uploaded = "original_file" in session
     data, headers = None, None
 
@@ -105,7 +148,6 @@ def index():
                 flash("No file selected. Please upload a valid Excel file.", "error")
                 logger.error("No file selected for upload.")
                 return redirect(url_for("index"))
-
             logger.debug("Received file: %s", file.filename)
             if file.filename.endswith(".xlsx") or file.filename.endswith(".xls"):
                 try:
@@ -130,43 +172,33 @@ def index():
                 flash("No file found. Please upload an Excel file first.", "error")
                 logger.error("Validation failed: No file in session.")
                 return redirect(url_for("index"))
-
             try:
                 file_bytes = base64.b64decode(session["original_file"])
-                # Validate header using entire file (or at least row 4)
                 stream = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream, header=None)
                 validation_errors = validate_excel(df_raw)
-
                 if validation_errors:
                     flash("Validation errors detected: " + ", ".join(validation_errors), "error")
                     logger.debug("Validation errors: %s", validation_errors)
                 else:
                     flash("Validation successful!", "success")
                     logger.debug("Validation passed without errors.")
-
                     row_start = int(request.form.get("start_row", 7))
-                    # Re-read file bytes to reset the stream.
-                    # Here, we no longer limit the number of columns.
+                    # Re-read file bytes to reset the stream pointer.
                     df_data = pd.read_excel(io.BytesIO(file_bytes), header=None, skiprows=row_start - 1)
-                    
-                    # Do not slice columns—show all columns (e.g., 29 columns).
+                    # Do not slice columns here so that all columns (e.g. 29) are shown.
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
-
                     session["validated_data"] = json.dumps(data, default=str)
                     session["validated_headers"] = json.dumps(headers)
                     logger.debug("Validated data stored in session.")
-
             except Exception as e:
                 flash(f"Error processing validation: {e}", "error")
                 logger.exception("Exception during validation step")
                 return redirect(url_for("index"))
-
     if "validated_data" in session and "validated_headers" in session:
         data = json.loads(session["validated_data"])
         headers = json.loads(session["validated_headers"])
-
     preview_html = generate_preview_html() if uploaded else ""
     return render_template("index.html", uploaded=uploaded, preview_html=preview_html, start_row=7, data=data, headers=headers)
 
@@ -201,7 +233,7 @@ def download_csv():
     try:
         file_bytes = base64.b64decode(original_file_b64)
         df = pd.read_excel(io.BytesIO(file_bytes), header=None)
-        # Do not slice columns here so that all columns (e.g., 29) are converted.
+        # Convert entire file without slicing so that all columns are included.
         csv_bytes = df.to_csv(index=False).encode("utf-8")
         return send_file(
             io.BytesIO(csv_bytes),
