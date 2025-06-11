@@ -19,7 +19,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./.flask_session/"
 app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
-app.config["SESSION_COOKIE_NAME"] = "session"  # explicitly set the cookie name
+app.config["SESSION_COOKIE_NAME"] = "session"  # explicitly set cookie name
 
 # Set session_cookie_name explicitly to satisfy Flask-Session requirements
 app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
@@ -93,7 +93,7 @@ def generate_preview_html():
 def index():
     logger.debug("Entered index route with method: %s", request.method)
 
-    # Determine if a file has been uploaded by checking session.
+    # Determine if a file has been uploaded by checking session
     uploaded = "original_file" in session
     data, headers = None, None
 
@@ -113,7 +113,7 @@ def index():
                 try:
                     file_bytes = file.read()
                     logger.debug("Read %d bytes from file", len(file_bytes))
-                    # Store the file in session (Base64 encoded)
+                    # Store the file (Base64 encoded) in session
                     session["original_file"] = base64.b64encode(file_bytes).decode("utf-8")
                     session["original_filename"] = file.filename
                     flash("File uploaded successfully. Please review the preview and set parameters.", "info")
@@ -135,7 +135,9 @@ def index():
                 return redirect(url_for("index"))
 
             try:
+                # Use file_bytes from session to ensure we are re-reading the same file.
                 file_bytes = base64.b64decode(session["original_file"])
+                # Use a BytesIO stream to read the excel file
                 stream = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream, header=None)
                 validation_errors = validate_excel(df_raw)
@@ -147,14 +149,19 @@ def index():
                     flash("Validation successful!", "success")
                     logger.debug("Validation passed without errors.")
 
-                    # Process the file further if needed.
-                    # In this example, we assume the actual data starts from row 7.
+                    # Process the file: assume actual data starts from row 7 (default)
                     row_start = int(request.form.get("start_row", 7))
-                    # Re-read the file from bytes to reset the stream.
+                    # Re-read the file bytes to reset the stream pointer
                     df_data = pd.read_excel(io.BytesIO(file_bytes), header=None, skiprows=row_start - 1)
                     
-                    # Set expected headers (adjust as needed)
-                    df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
+                    # If there are more columns than expected, select only the first 5 columns.
+                    if df_data.shape[1] >= 5:
+                        df_data = df_data.iloc[:, :5]
+                        df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
+                    else:
+                        flash("The file does not contain enough columns.", "error")
+                        return redirect(url_for("index"))
+                    
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
@@ -167,7 +174,6 @@ def index():
                 logger.exception("Exception during validation step")
                 return redirect(url_for("index"))
 
-    # Retrieve validated data from session (if available)
     if "validated_data" in session and "validated_headers" in session:
         data = json.loads(session["validated_data"])
         headers = json.loads(session["validated_headers"])
