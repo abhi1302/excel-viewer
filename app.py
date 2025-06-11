@@ -14,24 +14,19 @@ from sqlalchemy.orm import sessionmaker
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "devkey")
 
-# Monkey-patch for Flask-Session in Flask 2.3+
-if not hasattr(app, 'session_cookie_name'):
-    app.session_cookie_name = app.config.get("SESSION_COOKIE_NAME", "session")
-
+# Configure Flask-Session
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./.flask_session/"
 app.config["SESSION_PERMANENT"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 Session(app)
 
-# Set up logging
+# Logging setup
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Configure SQLAlchemy using Render's external database URL.
-PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", 
-    "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik"
-)
+# Configure SQLAlchemy using Render's external database URL
+PG_DATABASE_URL = os.environ.get("PG_DATABASE_URL", "postgresql://render_postgres_db_7cik_user:123456@dpg-d1479obipnbc73c4hts0-a.oregon-postgres.render.com/render_postgres_db_7cik")
 engine = create_engine(PG_DATABASE_URL)
 Base = declarative_base()
 
@@ -42,7 +37,7 @@ class Country(Base):
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Function to validate the Excel header.
+# Function to validate the Excel header
 def validate_excel(df):
     """ Validates the header row (assumed to be row 4, index 3) of the Excel sheet."""
     messages = []
@@ -58,32 +53,15 @@ def validate_excel(df):
             actual = str(df.iloc[3, col_index]).strip()
             if actual != expected:
                 messages.append(f"Cell {chr(65+col_index)}4 = '{actual}' ≠ '{expected}'")
-                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", 
-                             chr(65+col_index), expected, actual)
+                logger.debug("Validation mismatch at column %s: expected '%s', got '%s'", chr(65+col_index), expected, actual)
     except Exception as e:
         err_msg = f"Error during header validation: {e}"
         messages.append(err_msg)
         logger.exception("Exception during Excel header validation")
     return messages
 
-# A helper function for country lookup from the database.
-def get_country_from_tadig(tadig_code):
-    lookup_code = tadig_code[:3].upper()
-    db = SessionLocal()
-    try:
-        country_obj = db.query(Country).filter(Country.iso_code == lookup_code).first()
-        if country_obj:
-            return country_obj.country_name
-        else:
-            return "Unknown"
-    except Exception as e:
-        logger.exception("Error looking up country for %s", lookup_code)
-        return "Error"
-    finally:
-        db.close()
-
-# Function to generate an HTML preview from the uploaded Excel file.
 def generate_preview_html():
+    """ Generates an HTML preview from the uploaded Excel file. """
     original_file_b64 = session.get("original_file")
     if not original_file_b64:
         return "<p>No file uploaded yet.</p>"
@@ -100,7 +78,8 @@ def generate_preview_html():
 @app.route("/", methods=["GET", "POST"])
 def index():
     logger.debug("Entered index route with method: %s", request.method)
-    
+
+    uploaded = "original_file" in session
     data, headers = None, None
 
     if request.method == "POST":
@@ -123,6 +102,7 @@ def index():
                     session["original_filename"] = file.filename
                     flash("File uploaded successfully. Please review the preview and set parameters.", "info")
                     logger.debug("File stored in session successfully.")
+                    uploaded = True
                 except Exception as e:
                     flash(f"Error while uploading file: {e}", "error")
                     logger.exception("Exception during file upload")
@@ -133,14 +113,13 @@ def index():
 
         elif step == "validate":
             logger.debug("Starting validation process.")
-            original_file_b64 = session.get("original_file")
-            if not original_file_b64:
+            if not uploaded:
                 flash("No file found. Please upload an Excel file first.", "error")
                 logger.error("Validation failed: No file in session.")
                 return redirect(url_for("index"))
 
             try:
-                file_bytes = base64.b64decode(original_file_b64)
+                file_bytes = base64.b64decode(session["original_file"])
                 stream = io.BytesIO(file_bytes)
                 df_raw = pd.read_excel(stream, header=None)
                 validation_errors = validate_excel(df_raw)
@@ -152,16 +131,13 @@ def index():
                     flash("Validation successful!", "success")
                     logger.debug("Validation passed without errors.")
 
-                    # Process and display the validated data
-                    row_start = 7  # Default start row
+                    row_start = int(request.form.get("start_row", 7))
                     df_data = pd.read_excel(stream, header=None, skiprows=row_start - 1)
                     
-                    # Define expected headers
                     df_data.columns = ["BU PLMN Code", "TADIG PLMN Code", "Start date", "End date", "Currency"]
                     data = df_data.fillna("").to_dict(orient="records")
                     headers = df_data.columns.tolist()
 
-                    # Store validated data in session
                     session["validated_data"] = json.dumps(data, default=str)
                     session["validated_headers"] = json.dumps(headers)
                     logger.debug("Validated data stored in session.")
@@ -171,13 +147,12 @@ def index():
                 logger.exception("Exception during validation step")
                 return redirect(url_for("index"))
 
-    # Retrieve validated data if available
     if "validated_data" in session and "validated_headers" in session:
         data = json.loads(session["validated_data"])
         headers = json.loads(session["validated_headers"])
 
-    preview_html = generate_preview_html()
-    return render_template("index.html", uploaded=True, preview_html=preview_html, start_row=7, data=data, headers=headers)
+    preview_html = generate_preview_html() if uploaded else ""
+    return render_template("index.html", uploaded=uploaded, preview_html=preview_html, start_row=7, data=data, headers=headers)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

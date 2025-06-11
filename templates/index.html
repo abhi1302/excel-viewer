@@ -25,14 +25,14 @@
       <button type="submit">Upload File</button>
     </form>
   {% else %}
-    <!-- Once a file is uploaded, show the preview -->
+    <!-- File preview after upload -->
     <p><strong>Uploaded File:</strong> {{ session.original_filename }}</p>
     <h3>File Preview (first 10 rows)</h3>
     <div class="preview-container">
       {{ preview_html|safe }}
     </div>
-    
-    <!-- Step Two: Parameter Input & Validate Button -->
+
+    <!-- Step Two: Validation Form (Only Appears After Upload) -->
     <form method="post" action="/">
       <input type="hidden" name="step" value="validate">
       <label>Start reading from row (default = 7): </label>
